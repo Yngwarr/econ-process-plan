@@ -56,15 +56,16 @@ function create(genome) {
 	let _uses = 0;
 
 	let _step = 0;
-	while (!tasks_empty(tasks) && _step < 15) {
+	while (!tasks_empty(tasks) && _step < 200) {
+		console.log(`${tasks_empty(tasks)}`);
 		++_step;
 		console.log(`====${_step}====`);
-		console.log(`current tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
-		console.log(`unused: ${JSON.stringify(unused)}`);
-		console.log(
-			`\ncurrent schedule: ${JSON.stringify(_.map(schedule, _.last))}`
-		);
-		console.log(`idle: ${JSON.stringify(idle)}`);
+		//console.log(`current tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
+		//console.log(`unused: ${JSON.stringify(unused)}, busy: ${5 - unused.length}`);
+		//console.log(
+			//`\ncurrent schedule: ${JSON.stringify(_.map(schedule, _.last))}`
+		//);
+		//console.log(`idle: ${JSON.stringify(idle)}, busy: ${8 - idle.length}`);
 
 		/* handling empty task lists */
 		let avaliable_det = _.range(tasks.length);
@@ -100,7 +101,7 @@ function create(genome) {
 				genome >>= 1;
 				++_uses;
 			}
-			schedule[w].push([parseInt(det), t]);
+			schedule[w].push([parseInt(unused[det]), t]);
 			idle = _.without(idle, w);
 			//unused = _.without(unused, unused[det]);
 			in_use.push(unused[det]);
@@ -115,9 +116,13 @@ function create(genome) {
 
 		//console.log(`${JSON.stringify(avaliable_det)} - ${JSON.stringify(unused)} = ${JSON.stringify(_.difference(avaliable_det, unused))}`);
 
-		let time_step = _.min(_.map(
-			_.map(cut(tasks, _.difference(avaliable_det, unused)), _.last), (l) => { return l[1]; }
-		));
+		let time_step = 0;
+		let diff = _.difference(avaliable_det, unused);
+		if (diff.length !== 0) {
+			time_step = _.min(_.map(
+				_.map(cut(tasks, diff), _.last), (l) => { return l[1]; }
+			))
+		}
 		console.log(`time_step: ${time_step}`);
 		for (let w in idle) {
 			if (schedule[idle[w]].length == 0 ||
@@ -131,6 +136,10 @@ function create(genome) {
 		/* time step happens for tasks: we need to substract time from pending
 		 * tasks, then remove completed ones */
 
+		console.log(`\ncurrent tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
+		console.log(`current schedule: ${JSON.stringify(_.map(schedule, _.last))}`);
+		console.log(`unused: ${JSON.stringify(unused)}, busy: ${5 - unused.length}`);
+		console.log(`idle: ${JSON.stringify(idle)}, busy: ${8 - idle.length}`);
 		/* remove finished tasks */
 		for (let av in avaliable_det) {
 			det = avaliable_det[av];
@@ -145,20 +154,25 @@ function create(genome) {
 				if (tasks[det][tasks[det].length-1][1] < 0) {
 					console.warn('Just stepped some extra time. 0_o');
 				}
-				/* actual task removing */
+				/* actual task removal */
 				//console.log(tasks[det][tasks[det].length-1]);
 				//console.log(JSON.stringify(tasks[det][tasks[det].length-1]));
 				[u, time] = tasks[det].pop();
 				/* set detail back to unused */
 				unused.push(det);
-				/* and worker back to idle (yeah, a bit tricky) */
+				console.log(`DROPPING ${det}`);
+				/* and worker back to idle (yeah, a bit tricky and doesn's work -_-) */
 				let ws = units[u];
+
+				let whoa = true;
 				for (let w in ws) {
 					if (_.last(schedule[ws[w]])[0] == det) {
 						idle.push(ws[w]);
+						whoa = false;
 						break;
 					}
 				}
+				if (whoa) console.warn('Dropped a detail, but not a worker. 0_o');
 			}
 		} // for det in tasks
 	} // while
@@ -168,7 +182,7 @@ function create(genome) {
 
 function tasks_empty(tasks) {
 	for (let i in tasks) {
-		if (tasks[i] != []) return false;
+		if (tasks[i].length !== 0) return false;
 	}
 	return true;
 }
