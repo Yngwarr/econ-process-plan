@@ -30,7 +30,56 @@ const IDLE = -1;
 
 function init() {
 	let s = create(30);
+	draw(s);
 	console.log(s);
+	console.log(entity_length(s));
+}
+
+function draw(schedule) {
+	const color = ['#ff4100', '#7f44d6', '#ffe500', '#00b25c', '#ff9773'];
+	const len = entity_length(schedule)
+	d3.select('.plan')
+		.selectAll('div')
+		//.attr('width', '500px')
+		//.attr('height', '500px')
+		.data(schedule)
+		.enter()
+		.append('div')
+		.style('width', `${len*5}rem`)
+		.style('height', '5rem')
+		.attr('class', (d,i) => { return `row row-${i}`; });
+
+	for(let i = 0; i < schedule.length; ++i) {
+		d3.select(`.row-${i}`)
+			.selectAll('div')
+			.data(schedule[i])
+			.enter().append('div')
+			.attr('class', 'col')
+			.style('height', '5rem')
+			.style('width', (d) => { return d[1]*5 + 'rem'; })
+			.style('background-color', (d) => {
+				return d[0] < 0 ? '#eee' : color[d[0]];
+			})
+			.text((d) => { return d[0] < 0 ? '.' : `#${d[0]}`; })
+		;
+	}
+		//.style('width', (d) => { return d[0][1]*5 + 'rem'; })
+		//.style('background-color', (d) => {
+			//return d[0][0] < 0 ? '#eee' : color[d[0][0]];
+		//}).text(function(d) { return 'Lы!'; });
+	//;
+	
+	//let width = entity_length(schedule);
+	//let tbody = '';
+	//for (let r = 0; r < schedule.length; ++r) {
+		//tbody += '<tr>';
+		//for (let c = 0; c < width; ++c) {
+			//tbody += '<td></td>';
+		//}
+		//tbody += '<tr>';
+	//}
+	//document.querySelector('.plan table').innerHTML = tbody;
+	// TODO i see a red door and i want it painted shit...
 }
 
 /* genome is an 32-bit integer value, each bit is a gene. Genes are used to 
@@ -57,15 +106,8 @@ function create(genome) {
 
 	let _step = 0;
 	while (!tasks_empty(tasks) && _step < 200) {
-		console.log(`${tasks_empty(tasks)}`);
 		++_step;
-		console.log(`====${_step}====`);
-		//console.log(`current tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
-		//console.log(`unused: ${JSON.stringify(unused)}, busy: ${5 - unused.length}`);
-		//console.log(
-			//`\ncurrent schedule: ${JSON.stringify(_.map(schedule, _.last))}`
-		//);
-		//console.log(`idle: ${JSON.stringify(idle)}, busy: ${8 - idle.length}`);
+		//console.log(`====${_step}====`);
 
 		/* handling empty task lists */
 		let avaliable_det = _.range(tasks.length);
@@ -75,13 +117,11 @@ function create(genome) {
 				avaliable_det = _.without(avaliable_det, parseInt(t));
 			}
 		}
-		console.log(`unused: ${JSON.stringify(unused)}`);
+		//console.log(`unused: ${JSON.stringify(unused)}`);
 
 		/* load new tasks */
 		let in_use = [];
 		for (let det in unused) {
-			//console.log(`tasks: ${JSON.stringify(tasks)}`);
-			//console.log(`unused: ${JSON.stringify(unused)}, det: ${det}`);
 			let [u, t] = _.last(
 				tasks[
 					unused[det]
@@ -114,7 +154,6 @@ function create(genome) {
 		//let used_tasks = cut(_.map(tasks, _.last), unused);
 		/* we can step right to the next finished task */
 
-		//console.log(`${JSON.stringify(avaliable_det)} - ${JSON.stringify(unused)} = ${JSON.stringify(_.difference(avaliable_det, unused))}`);
 
 		let time_step = 0;
 		let diff = _.difference(avaliable_det, unused);
@@ -123,7 +162,7 @@ function create(genome) {
 				_.map(cut(tasks, diff), _.last), (l) => { return l[1]; }
 			))
 		}
-		console.log(`time_step: ${time_step}`);
+		//console.log(`time_step: ${time_step}`);
 		for (let w in idle) {
 			if (schedule[idle[w]].length == 0 ||
 					_.last(schedule[idle[w]])[0] != IDLE) {
@@ -136,10 +175,10 @@ function create(genome) {
 		/* time step happens for tasks: we need to substract time from pending
 		 * tasks, then remove completed ones */
 
-		console.log(`\ncurrent tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
-		console.log(`current schedule: ${JSON.stringify(_.map(schedule, _.last))}`);
-		console.log(`unused: ${JSON.stringify(unused)}, busy: ${5 - unused.length}`);
-		console.log(`idle: ${JSON.stringify(idle)}, busy: ${8 - idle.length}`);
+		//console.log(`\ncurrent tasks: ${JSON.stringify(_.map(tasks, _.last))}`);
+		//console.log(`current schedule: ${JSON.stringify(_.map(schedule, _.last))}`);
+		//console.log(`unused: ${JSON.stringify(unused)}, busy: ${5 - unused.length}`);
+		//console.log(`idle: ${JSON.stringify(idle)}, busy: ${8 - idle.length}`);
 		/* remove finished tasks */
 		for (let av in avaliable_det) {
 			det = avaliable_det[av];
@@ -155,12 +194,10 @@ function create(genome) {
 					console.warn('Just stepped some extra time. 0_o');
 				}
 				/* actual task removal */
-				//console.log(tasks[det][tasks[det].length-1]);
-				//console.log(JSON.stringify(tasks[det][tasks[det].length-1]));
 				[u, time] = tasks[det].pop();
 				/* set detail back to unused */
 				unused.push(det);
-				console.log(`DROPPING ${det}`);
+				//console.log(`DROPPING ${det}`);
 				/* and worker back to idle (yeah, a bit tricky and doesn's work -_-) */
 				let ws = units[u];
 
@@ -177,7 +214,15 @@ function create(genome) {
 		} // for det in tasks
 	} // while
 	console.log(`\nComplete. Genome was used ${_uses} times.`);
-	return {'sched': schedule, 'tasks': tasks};
+	return schedule;
+}
+
+function entity_length(sch) {
+	return _.max(_.map(sch, (line) => {
+		return _.reduce(line, (a, b) => {
+			return a + b[1];
+		}, 0);
+	}));
 }
 
 function tasks_empty(tasks) {
