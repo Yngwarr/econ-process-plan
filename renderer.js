@@ -11,18 +11,6 @@ let norms_list = [
 	[[4,4], [2,2], [1,3], [3,8], [0,2], [2,3], [1,5]]
 ];
 
-/* unit is for unit number (not unique), ops is a result */
-/*let schedule = [
-	{ 'unit': 1, 'ops': []},
-	{ 'unit': 1, 'ops': []},
-	{ 'unit': 2, 'ops': []},
-	{ 'unit': 2, 'ops': []},
-	{ 'unit': 3, 'ops': []},
-	{ 'unit': 3, 'ops': []},
-	{ 'unit': 4, 'ops': []},
-	{ 'unit': 5, 'ops': []},
-];*/
-
 /* numbers of workers, associated with particular units */
 const units = [[0,1], [2,3], [4,5], [6], [7]];
 const MAX_WORKER = 7;
@@ -30,26 +18,48 @@ const IDLE = -1;
 
 function init() {
 	let s = create(30);
+
+	d3.select('#scale')
+		.selectAll('div')
+		.data(['1.1', '1.2', '2.1', '2.1', '3.1', '3.2', '4.1', '5.1'])
+		.enter()
+		.append('div')
+		.style('width', '5rem')
+		.style('height', '5rem')
+		.text((d) => { return d; });
+
 	draw(s);
 	console.log(s);
+	console.log(JSON.stringify(_.map(s, _.last)));
 	console.log(entity_length(s));
 }
 
-function draw(schedule) {
-	const color = ['#ff4100', '#7f44d6', '#ffe500', '#00b25c', '#ff9773'];
-	const len = entity_length(schedule)
+const color = ['#E61717', '#E68917', '#7683E7', '#12B812', '#6B1799'];
+const hov_color = ['#7B0404', '#7B4604', '#23319E', '#036303', '#4E2D60'];
+
+function draw(s) {
+	draw_plot(s);
+	print_times(s);
+	draw_btns(norms_list.length);
+}
+
+function draw_plot(schedule) {
+	const len = entity_length(schedule);
+
+	// the wrost thing I've ever done
+	document.querySelector('.plan').innerHTML = '';
+	// draw rows of data
 	d3.select('.plan')
 		.selectAll('div')
-		//.attr('width', '500px')
-		//.attr('height', '500px')
 		.data(schedule)
 		.enter()
 		.append('div')
-		.style('width', `${len*5}rem`)
+		.style('width', `${len*5.5}rem`)
 		.style('height', '5rem')
 		.attr('class', (d,i) => { return `row row-${i}`; });
 
-	for(let i = 0; i < schedule.length; ++i) {
+	// draw cols
+	for (let i = 0; i < schedule.length; ++i) {
 		d3.select(`.row-${i}`)
 			.selectAll('div')
 			.data(schedule[i])
@@ -60,26 +70,114 @@ function draw(schedule) {
 			.style('background-color', (d) => {
 				return d[0] < 0 ? '#eee' : color[d[0]];
 			})
+			.style('color', (d) => {
+				return d[0] < 0 ? '#eee' : color[d[0]];
+			})
 			.text((d) => { return d[0] < 0 ? '.' : `#${d[0]}`; })
+			.on("mouseover", function(d) {
+				// shade
+				if (d[0] >= 0) {
+					d3.select(this)
+						.transition()
+						.duration(200)
+						.style("background-color", hov_color[d[0]])
+						.style("color", hov_color[d[0]]);
+				}
+				tip.transition()
+					.duration(200)
+					.style("opacity", .9);
+				tip.html((d[0] < 0 ? 'Простой' : `Деталь ${d[0]+1}`)
+					+ `, ${d[1]} ${days(d[1])}`)
+					.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY) + "px");
+			})
+			.on('mousemove', function(d) {
+				tip.style('left', (d3.event.pageX) + 'px')
+					.style('top', (d3.event.pageY) + 'px');
+			})
+			.on("mouseout", function(d) {
+				// shade
+				if (d[0] >= 0) {
+					d3.select(this)
+						.transition()
+						.duration(200)
+						.style("background-color", color[d[0]])
+						.style("color", color[d[0]]);
+				}
+				tip.transition()
+					.duration(500)
+					.style("opacity", 0);
+			});
 		;
 	}
-		//.style('width', (d) => { return d[0][1]*5 + 'rem'; })
-		//.style('background-color', (d) => {
-			//return d[0][0] < 0 ? '#eee' : color[d[0][0]];
-		//}).text(function(d) { return 'Lы!'; });
-	//;
-	
-	//let width = entity_length(schedule);
-	//let tbody = '';
-	//for (let r = 0; r < schedule.length; ++r) {
-		//tbody += '<tr>';
-		//for (let c = 0; c < width; ++c) {
-			//tbody += '<td></td>';
-		//}
-		//tbody += '<tr>';
-	//}
-	//document.querySelector('.plan table').innerHTML = tbody;
-	// TODO i see a red door and i want it painted shit...
+
+	// tooltip
+	let tip = d3.select("body").append("div")	
+		.attr("class", "tooltip")				
+		.style("opacity", 0);
+}
+
+function print_times(schedule) {
+	d3.selectAll('#time li > span')
+		.data(_.map(schedule, row_length))
+		.text((d) => {
+			return `${d} ${days(d)}`;
+		});
+}
+
+function draw_btns(num) {
+	d3.select('#btns')
+		.selectAll('div')
+		.data(_.range(num))
+		.enter()
+		.append('button')
+		.style('border-color', (d) => { return color[d]; })
+		.text((d) => {
+			return `Деталь ${d+1}`;
+		})
+		.on('mouseover', function(d) {
+			d3.select(this)
+				.transition()
+				.style('background-color', (d) => {
+					return color[d];
+				})
+				.style('color', 'white');
+		})
+		.on('mouseout', function(d) {
+			if (d3.select(this).classed('btn-on')) return;
+			d3.select(this)
+				.transition()
+				.style('background-color', 'white')
+				.style('color', 'black');
+		})
+		.on('click', function(d) {
+			d3.select('.btn-on')
+				.style('background-color', 'white')
+				.style('color', 'black')
+				.classed('btn-on', false);
+			d3.select(this).classed('btn-on', true);
+			show_norm(d);
+		});
+}
+
+function show_norm(num) {
+	document.getElementById('norm-ed').innerHTML = '';
+	d3.select('#norm-ed')
+		.selectAll('div')
+		.data(norms_list[num])
+		.enter()
+		.append('div')
+		.text((d) => { return `Подразделение ${d[0]+1}` })
+		.append('input')
+		.attr('type', 'number')
+		.attr('min', 0)
+		.attr('value', function(d) { return d[1]; })
+		.on('change', function(d, i) {
+			let n = norms_list[num].length - 1 - i;
+			console.log(n);
+			norms_list[num][n][1] = parseInt(this.value);
+			console.log(JSON.stringify(norms_list[num]));
+		});
 }
 
 /* genome is an 32-bit integer value, each bit is a gene. Genes are used to 
@@ -90,7 +188,7 @@ function create(genome) {
 	/* list of idle workers */
 	let idle = _.range(MAX_WORKER+1);
 	/* copy is made not to corrupt the initial data */
-	let tasks = Object.assign([], norms_list);
+	let tasks = JSON.parse(JSON.stringify(norms_list));
 	/* here we store our solution: every index is a worker's number. Tasks are
 	 * stored as [detail, time], where detail = -1 when worker stays idle */
 	/* don't you look at me like that! It's just a 8 empty lists generator */
@@ -225,6 +323,12 @@ function entity_length(sch) {
 	}));
 }
 
+function row_length(row) {
+	let sum = _.reduce(row, (a, b) => { return a + b[1]; }, 0);
+	if (_.last(row)[0] < 0) { sum -= _.last(row)[1]; }
+	return sum;
+}
+
 function tasks_empty(tasks) {
 	for (let i in tasks) {
 		if (tasks[i].length !== 0) return false;
@@ -242,4 +346,11 @@ function cut(arr, idxx) {
 		res.push(arr[i]);
 	}
 	return res;
+}
+
+function days(n) {
+	let i = n%10;
+	if (i === 1 && parseInt(n/10) !== 1) return 'день';
+	if (i >= 2 && i < 5 && parseInt(n/10) !== 1) return 'дня';
+	return 'дней';
 }

@@ -1,18 +1,41 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-    <!--<script>-->
-<!--require('./renderer.js')-->
-    <!--</script>-->
-	<link href='style.css' rel='stylesheet'>
-	<script src='./3rd/underscore-min.js'></script>
-	<script src='./3rd/d3.v4.min.js'></script>
-	<script src='./renderer.js'></script>
-  </head>
-  <body onload='init()'>
-	<div class='plan'>
-	</div>
-  </body>
+	<head>
+		<meta charset="UTF-8">
+		<title>Экономика -- ван лав!</title>
+		<link href='style.css' rel='stylesheet'>
+		<script src='./3rd/underscore-min.js'></script>
+		<script src='./3rd/d3.v4.min.js'></script>
+		<script src='./renderer.js'></script>
+	</head>
+	<body onload='init()'>
+		<div id='view'>
+			<div id='scale'>
+			</div>
+			<div class='plan'>
+			</div>
+		</div>
+		<div id='ctrl'>
+			<div id='time'>
+				<h1>Суммарное время согласования:</h1>
+				<ul>
+					<li>Деталь 1 - <span>...</span></li>
+					<li>Деталь 2 - <span>...</span></li>
+					<li>Деталь 3 - <span>...</span></li>
+					<li>Деталь 4 - <span>...</span></li>
+					<li>Деталь 5 - <span>...</span></li>
+				</ul>
+				<div id='glbl-ctrl'>
+					<button id='regen' class='norm-btn'>Пересчитать</button>
+					<button id='stat' class='norm-btn'>Статос</button>
+				</div>
+			</div>
+			<div id='norms'>
+				<h1>Нормативы времени:</h1>
+				<div id='btns'></div>
+				<div id='norm-ed'>
+				</div>
+			</div>
+		</div>
+	</body>
 </html>
