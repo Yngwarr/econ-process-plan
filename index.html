@@ -4,6 +4,7 @@
 		<meta charset="UTF-8">
 		<title>Экономика -- ван лав!</title>
 		<link href='style.css' rel='stylesheet'>
+		<link href='./3rd/w3.css' rel='stylesheet'>
 		<script src='./3rd/underscore-min.js'></script>
 		<script src='./3rd/d3.v4.min.js'></script>
 		<script src='./renderer.js'></script>
@@ -26,14 +27,28 @@
 					<li>Деталь 5 - <span>...</span></li>
 				</ul>
 				<div id='glbl-ctrl'>
-					<button id='regen' class='norm-btn'>Пересчитать</button>
-					<button id='stat' class='norm-btn'>Статос</button>
+					<button id='regen' class='norm-btn' onclick='regen()'>
+						Пересчитать
+					</button>
+					<button id='stat' class='norm-btn' onclick="document.getElementById('win-stat').style.display='block'">Статистика</button>
 				</div>
 			</div>
 			<div id='norms'>
 				<h1>Нормативы времени:</h1>
 				<div id='btns'></div>
 				<div id='norm-ed'>
+				</div>
+			</div>
+		</div>
+
+		<div id="win-stat" class="w3-modal">
+			<div class="w3-modal-content">
+				<div class="w3-container">
+					<div id="stats">
+					</div>
+					<div id='win-close'>
+						<button class='norm-btn' onclick="document.getElementById('win-stat').style.display='none'">Закрыть</button>
+					</div>
 				</div>
 			</div>
 		</div>

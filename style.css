@@ -56,7 +56,7 @@ div.tooltip {
 	padding: 2rem;
 }
 
-#ctrl h1 {
+h1 {
 	font-weight: bold;
 }
 
@@ -95,4 +95,34 @@ button {
 
 #glbl-ctrl > div {
 	display: inline-block;
+}
+
+#win-stat {
+	font-size: 2.4rem;
+}
+
+#win-close {
+	text-align: center;
+}
+
+#win-stat h1 {
+	margin-top: 2rem;
+	margin-left: 2rem;
+}
+
+#win-stat li {
+	margin-left: 4rem;
+	margin-top: 0.5rem;
+}
+
+#win-stat li:hover {
+	background-color: #ddd;
+}
+
+.w3-container {
+}
+
+#stats {
+	height: 75vh;
+	overflow-y: auto;
 }

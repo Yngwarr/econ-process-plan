@@ -11,14 +11,14 @@ let norms_list = [
 	[[4,4], [2,2], [1,3], [3,8], [0,2], [2,3], [1,5]]
 ];
 
+let population = [];
+
 /* numbers of workers, associated with particular units */
 const units = [[0,1], [2,3], [4,5], [6], [7]];
 const MAX_WORKER = 7;
 const IDLE = -1;
 
 function init() {
-	let s = create(30);
-
 	d3.select('#scale')
 		.selectAll('div')
 		.data(['1.1', '1.2', '2.1', '2.1', '3.1', '3.2', '4.1', '5.1'])
@@ -28,19 +28,16 @@ function init() {
 		.style('height', '5rem')
 		.text((d) => { return d; });
 
-	draw(s);
-	console.log(s);
-	console.log(JSON.stringify(_.map(s, _.last)));
-	console.log(entity_length(s));
+	draw_btns(norms_list.length);
+	regen();
 }
 
-const color = ['#E61717', '#E68917', '#7683E7', '#12B812', '#6B1799'];
-const hov_color = ['#7B0404', '#7B4604', '#23319E', '#036303', '#4E2D60'];
+const color = ['#e61717', '#e68917', '#7683e7', '#12b812', '#6b1799'];
+const hov_color = ['#7b0404', '#7b4604', '#23319e', '#036303', '#4e2d60'];
 
 function draw(s) {
 	draw_plot(s);
 	print_times(s);
-	draw_btns(norms_list.length);
 }
 
 function draw_plot(schedule) {
@@ -119,7 +116,7 @@ function draw_plot(schedule) {
 
 function print_times(schedule) {
 	d3.selectAll('#time li > span')
-		.data(_.map(schedule, row_length))
+		.data(det_time(schedule))
 		.text((d) => {
 			return `${d} ${days(d)}`;
 		});
@@ -170,7 +167,7 @@ function show_norm(num) {
 		.text((d) => { return `Подразделение ${d[0]+1}` })
 		.append('input')
 		.attr('type', 'number')
-		.attr('min', 0)
+		.attr('min', 1)
 		.attr('value', function(d) { return d[1]; })
 		.on('change', function(d, i) {
 			let n = norms_list[num].length - 1 - i;
@@ -178,6 +175,80 @@ function show_norm(num) {
 			norms_list[num][n][1] = parseInt(this.value);
 			console.log(JSON.stringify(norms_list[num]));
 		});
+}
+
+function draw_stat() {
+	document.getElementById('stats').innerHTML = '';
+	d3.select('#stats')
+		.selectAll('div')
+		.data(population)
+		.enter()
+		.append('div')
+		.attr('class', (d, i) => { return `pop-${i}`; })
+		.append('h1')
+		.text((d, i) => { return `Поколение ${i}:`; });
+	for (let i = 0; i < population.length; ++i) {
+		d3.select(`.pop-${i}`)
+			.selectAll('div')
+			.append('ul')
+			.data(population[i])
+			.enter()
+			.append('li')
+			.html((d) => {
+				return `${entity_length(d)}: ${JSON.stringify(det_time(d))}`;
+			})
+			.on('click', function (d) {
+				document.getElementById('win-stat').style.display='none';
+				draw(d);
+			});
+	}
+}
+
+
+function regen() {
+	populate();
+	draw_stat();
+	let s = _.min(_.last(population), (p) => { return entity_length(p); });
+	draw(s);
+	console.log(s);
+	console.log(JSON.stringify(_.map(s, _.last)));
+	console.log(entity_length(s));
+}
+
+// TODO less chaos, please
+function populate() {
+	let generation = [];
+	let genome = [];
+	let fits = [];
+	let xover = (a, b) => { return (a & ~127) | (b & 127); };
+	let mutate = (a) => {
+		let m = 0;
+		for (let i = 0; i < 5; ++i) {
+			m = m | (2**_.random(0,16))
+		}
+		console.log(`mutant: ${m}`);
+		return a^m;
+	};
+	const POP_SIZE = 10;
+
+	population = [];
+	for (let i = 0; i < POP_SIZE; ++i) {
+		genome.push(_.random(0, Number.MAX_SAFE_INTEGER));
+	}
+	for (let i = 0; i < 10; ++i) {
+		console.log(`genome: ${JSON.stringify(genome)}`);
+		generation = _.map(genome, (g) => { return create(g); });
+		fits = _.map(generation, (g) => { return entity_length(g); })
+		console.log(`fits: ${JSON.stringify(fits)}`);
+		let ngen = [];
+		for (let j = 0; j < POP_SIZE/2; ++j) {
+			ngen.push(xover(genome[j], genome[j+POP_SIZE/2]));
+		}
+		while (ngen.length !== 0) {
+			genome[_.random(0, POP_SIZE-1)] = mutate(ngen.pop());
+		}
+		population.push(generation);
+	}
 }
 
 /* genome is an 32-bit integer value, each bit is a gene. Genes are used to 
@@ -323,10 +394,32 @@ function entity_length(sch) {
 	}));
 }
 
-function row_length(row) {
+function row_length(row, ign) {
 	let sum = _.reduce(row, (a, b) => { return a + b[1]; }, 0);
-	if (_.last(row)[0] < 0) { sum -= _.last(row)[1]; }
+	//if (_.last(row)[0] < 0) { sum -= _.last(row)[1]; }
+	for (let i = row.length - 1; i >= 0; --i) {
+		if (row[i][0] < 0 || ign.indexOf(row[i][0]) >= 0) {
+			sum -= row[i][1];
+		} else break;
+	}
 	return sum;
+}
+
+function det_time(schedule) {
+	let t = _.map(norms_list, () => { return 0; });
+	let ignore = [];
+	for (let i = 0; i < t.length; ++i) {
+		let lens = _.map(schedule, (d) => {
+			return row_length(d, ignore);
+		})
+		let idx = lens.indexOf(_.max(lens));
+		let el = _.last(_.filter(schedule[idx], (d) => {
+			return d[0] >= 0 && ignore.indexOf(d[0]) < 0;
+		}))
+		t[el[0]] = lens[idx];
+		ignore.push(el[0]);
+	}
+	return t;
 }
 
 function tasks_empty(tasks) {

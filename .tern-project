@@ -1,0 +1,15 @@
+{
+	"libs": [
+		"browser"
+	],
+	"loadEagerly": [
+		"./3rd/d3.v4.min.js",
+		"./3rd/underscore-min.js"
+	],
+	"plugins": {
+		"requirejs": {
+			"baseURL": "./",
+			"paths": {}
+		}
+	}
+}
